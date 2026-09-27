@@ -1,0 +1,17 @@
+{
+  "name": "student-agent",
+  "version": "1.0.0",
+  "description": "Background telemetry agent for student workstations",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js",
+    "build": "pkg main.js --targets node18-win-x64 --output dist/student-agent.exe"
+  },
+  "dependencies": {
+    "socket.io-client": "^4.8.3"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
+  },
+  "bin": "index.js"
+}

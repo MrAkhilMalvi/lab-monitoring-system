@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Lab Surveillance System</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- VIEW 1: LAB CONNECT CARD -->
+  <div id="loginView" class="flex-center" style="height: 100vh;">
+    <div class="login-card">
+      <div class="brand">
+        <div class="brand-badge"></div>
+        <h2>Sentinel Surveillance</h2>
+      </div>
+      <p class="subtitle">Enter Lab ID to Initialize Station</p>
+
+      <div class="form-group">
+        <label>LAB STATION ID</label>
+        <input type="text" id="labName" value="LAB-101">
+      </div>
+
+      <button id="loginBtn" class="btn-primary">Initialize Control Console</button>
+      <div id="errorDiv" class="error-msg"></div>
+    </div>
+  </div>
+
+  <!-- VIEW 2: CONTROL CONSOLE (MAIN) -->
+  <div id="dashboardView" class="app-layout" style="display: none;">
+    <header class="top-bar">
+      <div>
+        <h2 id="labTitle">Lab Surveillance Console</h2>
+        <span class="subtext">Real-Time Integrity Monitoring</span>
+      </div>
+      <div class="header-stats">
+        <div class="stat-badge">
+          <span>Active Workstations:</span>
+          <strong id="pcCounter" class="accent-text">0</strong>
+        </div>
+      </div>
+    </header>
+
+    <div class="workspace-body">
+      <!-- Grid View -->
+      <main id="pcGrid" class="pc-grid">
+        <!-- Workstation Cards Render Dynamically -->
+      </main>
+
+      <!-- Advanced Side Inspector Drawer -->
+      <aside id="inspectorDrawer" class="inspector-drawer">
+        <div class="drawer-header">
+          <div class="user-profile-title">
+            <h3 id="drawerPcName">DESKTOP-NAME</h3>
+            <span id="drawerStatusBadge" class="badge">NORMAL</span>
+          </div>
+          <button id="closeDrawerBtn" class="close-btn">✕</button>
+        </div>
+
+        <div class="drawer-content">
+          <!-- Student Metadata Section -->
+          <div class="info-section">
+            <h4>Student Details</h4>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="label">Student Name</span>
+                <span id="drawerStudentName" class="value">--</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Course / Sem</span>
+                <span id="drawerCourseSem" class="value">--</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Exam Schedule</span>
+                <span id="drawerExamTime" class="value">--</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Active Window</span>
+                <span id="drawerCurrentApp" class="value accent-text">--</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Activity Log Stream -->
+          <div class="logs-section">
+            <div class="logs-header">
+              <h4>System Activity Logs</h4>
+              <span class="subtext">Real-time telemetry feeds</span>
+            </div>
+            <div id="logList" class="log-viewport">
+              <!-- Logs stream dynamically -->
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

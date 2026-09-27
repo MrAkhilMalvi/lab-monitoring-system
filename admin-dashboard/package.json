@@ -1,0 +1,31 @@
+{
+  "name": "admin-dashboard",
+  "version": "1.0.0",
+  "description": "Lab Surveillance Assistant Control Console",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win nsis"
+  },
+  "dependencies": {
+    "socket.io-client": "^4.8.3"
+  },
+  "devDependencies": {
+    "electron": "^43.2.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.sentinel.admindashboard",
+    "productName": "Sentinel Lab Assistant",
+    "win": {
+      "target": "nsis"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer.js",
+      "dashboard.html",
+      "style.css"
+    ]
+  }
+}
