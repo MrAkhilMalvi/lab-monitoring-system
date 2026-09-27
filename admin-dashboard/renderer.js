@@ -1,4 +1,5 @@
 const loginBtn = document.getElementById('loginBtn');
+const demoBtn = document.getElementById('demoBtn');
 const labNameInput = document.getElementById('labName');
 const errorDiv = document.getElementById('errorDiv');
 const loginView = document.getElementById('loginView');
@@ -7,11 +8,12 @@ const pcGrid = document.getElementById('pcGrid');
 const pcCounter = document.getElementById('pcCounter');
 const labTitle = document.getElementById('labTitle');
 
-// Inspector Drawer Elements
+// Drawer Inspector Elements
 const inspectorDrawer = document.getElementById('inspectorDrawer');
 const closeDrawerBtn = document.getElementById('closeDrawerBtn');
 const drawerPcName = document.getElementById('drawerPcName');
 const drawerStatusBadge = document.getElementById('drawerStatusBadge');
+const drawerRollNo = document.getElementById('drawerRollNo');
 const drawerStudentName = document.getElementById('drawerStudentName');
 const drawerCourseSem = document.getElementById('drawerCourseSem');
 const drawerExamTime = document.getElementById('drawerExamTime');
@@ -21,7 +23,7 @@ const logList = document.getElementById('logList');
 window.activePCs = window.activePCs || new Map();
 let selectedPcId = null;
 
-// Connect / Login Logic
+// Handle Station Login Initialization
 if (loginBtn) {
   loginBtn.addEventListener('click', async () => {
     const labId = labNameInput?.value?.trim();
@@ -68,7 +70,37 @@ if (loginBtn) {
   });
 }
 
-// Socket Subscriptions
+// Load bundled sample-data.json so the dashboard UI can be previewed
+// without a live server / connected student nodes.
+if (demoBtn) {
+  demoBtn.addEventListener('click', async () => {
+    if (errorDiv) errorDiv.textContent = 'Loading demo data...';
+    try {
+      const res = await fetch('sample-data.json');
+      if (!res.ok) throw new Error('sample-data.json not found');
+      const demoPCs = await res.json();
+
+      window.activePCs.clear();
+      demoPCs.forEach(pc => {
+        const pcId = pc.id || pc.socketId;
+        if (pcId) window.activePCs.set(pcId, pc);
+      });
+
+      if (errorDiv) errorDiv.textContent = '';
+      if (labTitle) labTitle.textContent = 'Station: DEMO MODE';
+
+      loginView.style.display = 'none';
+      dashboardView.style.display = 'flex';
+
+      renderGrid();
+    } catch (err) {
+      console.error('[Demo Data Error]:', err);
+      if (errorDiv) errorDiv.textContent = 'Could not load sample-data.json.';
+    }
+  });
+}
+
+// Bind incoming Socket Streams
 function bindSocketListeners() {
   window.adminAPI.onPcConnected((pc) => {
     const pcId = pc.id || pc.socketId;
@@ -98,7 +130,7 @@ function bindSocketListeners() {
   });
 }
 
-// Render Grid Cards
+// Render dynamic card view
 function renderGrid() {
   if (!pcGrid) return;
   pcGrid.innerHTML = '';
@@ -108,21 +140,21 @@ function renderGrid() {
     const card = document.createElement('div');
     card.className = `pc-card ${selectedPcId === id ? 'active-selected' : ''}`;
 
-    let color = '#22c55e'; // Green
-    if (pc.status === 'red') color = '#f59e0b'; // Amber
-    if (pc.status === 'dark-red') color = '#ef4444'; // Red
+    let color = '#16A34A'; // Normal Status Green
+    if (pc.status === 'red') color = '#D97706'; // Moderate Flag Amber
+    if (pc.status === 'dark-red') color = '#DC2626'; // Restricted Flag Red
 
     card.innerHTML = `
       <div class="pc-header">
         <span class="pc-title">${pc.pcName}</span>
-        <span class="status-dot" style="background-color: ${color}; box-shadow: 0 0 8px ${color};"></span>
+        <span class="status-dot" style="background-color: ${color}; box-shadow: 0 0 6px ${color};"></span>
       </div>
       <div class="pc-meta">
-        <p><strong>Student:</strong> ${pc.studentName}</p>
+        <p><strong>${pc.rollNo || '--'}</strong> · ${pc.studentName}</p>
         <p>${pc.course} (${pc.semester})</p>
       </div>
       <div class="pc-app-bar">
-        <strong>App:</strong> ${pc.currentApp}
+        <strong>Active App:</strong> ${pc.currentApp}
       </div>
     `;
 
@@ -131,13 +163,13 @@ function renderGrid() {
   });
 }
 
-// Open and populate side inspector
+// Open and update side drawer inspector
 function openInspector(pcId) {
   const pc = window.activePCs.get(pcId);
   if (!pc) return;
 
   selectedPcId = pcId;
-  renderGrid(); // Highlight active card border
+  renderGrid();
 
   updateInspectorDrawer(pc);
   inspectorDrawer.classList.add('open');
@@ -145,6 +177,7 @@ function openInspector(pcId) {
 
 function updateInspectorDrawer(pc) {
   drawerPcName.textContent = pc.pcName;
+  if (drawerRollNo) drawerRollNo.textContent = pc.rollNo || '--';
   drawerStudentName.textContent = pc.studentName;
   drawerCourseSem.textContent = `${pc.course} - ${pc.semester}`;
   drawerExamTime.textContent = pc.examTime || '09:00 AM - 12:00 PM';
@@ -178,7 +211,6 @@ function updateInspectorDrawer(pc) {
   }
 }
 
-// Close Inspector Side Drawer
 function closeDrawer() {
   selectedPcId = null;
   inspectorDrawer.classList.remove('open');

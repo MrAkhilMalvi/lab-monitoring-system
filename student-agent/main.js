@@ -2,17 +2,19 @@ const io = require('socket.io-client');
 const os = require('os');
 const { exec } = require('child_process');
 
-// Replace this with the IPv4 address of the PC hosting server.js
-// Example: 'http://192.168.1.15:3000'
-const SERVER_URL = process.env.SERVER_URL || 'http://10.54.67.156:3000';
+// Target server URL (can be provided via environment variable)
+const SERVER_URL = process.env.SERVER_URL || 'http://10.36.115.157:3000';
 
-const BANNED_APPS = ['discord', 'chatgpt', 'whatsapp', 'telegram', 'cheatengine',  'gemini'];
+// Restrictive lists for cheating prevention
+const BANNED_APPS = ['discord', 'chatgpt', 'whatsapp', 'telegram', 'cheatengine', 'gemini', 'claude', 'copilot'];
+const ALLOWED_KEYWORDS = ['exam', 'chrome', 'code', 'vsc', 'cmd', 'powershell', 'terminal'];
+
 let socket;
 let trackingInterval = null;
 
 function startTracker(serverAddress = SERVER_URL) {
   console.log(`Connecting Student Agent to: ${serverAddress}...`);
-  
+
   socket = io(serverAddress, {
     transports: ['websocket', 'polling'],
     reconnection: true,
@@ -30,7 +32,6 @@ function startTracker(serverAddress = SERVER_URL) {
       examTime: '09:00 AM - 12:00 PM'
     });
 
-    // Prevent duplicated timers if client disconnects and reconnects
     if (trackingInterval) clearInterval(trackingInterval);
     trackingInterval = setInterval(checkForegroundWindow, 2000);
   });
@@ -48,6 +49,7 @@ function startTracker(serverAddress = SERVER_URL) {
 function checkForegroundWindow() {
   if (!socket || !socket.connected) return;
 
+  // PowerShell Win32 API Call to inspect current active foreground window title
   const psCmd = `powershell -NoProfile -NonInteractive -Command "Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public class Win32 { [DllImport(\\\"user32.dll\\\")] public static extern IntPtr GetForegroundWindow(); [DllImport(\\\"user32.dll\\\", CharSet = CharSet.Auto)] public static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder lpString, int nMaxCount); }'; $hwnd = [Win32]::GetForegroundWindow(); $title = New-Object System.Text.StringBuilder 256; [Win32]::GetWindowText($hwnd, $title, 256) | Out-Null; $title.ToString()"`;
 
   exec(psCmd, (err, stdout) => {
@@ -57,6 +59,7 @@ function checkForegroundWindow() {
     let status = 'green';
     const lowerTitle = windowTitle.toLowerCase();
 
+    // Critical Flagging: Check for Banned Applications
     for (const appName of BANNED_APPS) {
       if (lowerTitle.includes(appName)) {
         status = 'dark-red';
@@ -64,8 +67,12 @@ function checkForegroundWindow() {
       }
     }
 
-    if (status !== 'dark-red' && !lowerTitle.includes('exam') && !lowerTitle.includes('chrome')) {
-      status = 'red';
+    // Moderate Flagging: Check if Active Window is Outside Allowed Tools
+    if (status !== 'dark-red') {
+      const isAllowed = ALLOWED_KEYWORDS.some(keyword => lowerTitle.includes(keyword));
+      if (!isAllowed && windowTitle.length > 0) {
+        status = 'red';
+      }
     }
 
     socket.emit('student-telemetry', {
@@ -75,7 +82,6 @@ function checkForegroundWindow() {
   });
 }
 
-// Automatically start tracking when running directly
 if (require.main === module) {
   startTracker();
 }

@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Lab Surveillance System</title>
+  <title>Sentinel Surveillance System</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- VIEW 1: LAB CONNECT CARD -->
+  <!-- VIEW 1: LAB LOGIN CARD -->
   <div id="loginView" class="flex-center" style="height: 100vh;">
     <div class="login-card">
       <div class="brand">
@@ -17,16 +17,17 @@
       <p class="subtitle">Enter Lab ID to Initialize Station</p>
 
       <div class="form-group">
-        <label>LAB STATION ID</label>
+        <label>Lab Station ID</label>
         <input type="text" id="labName" value="LAB-101">
       </div>
 
       <button id="loginBtn" class="btn-primary">Initialize Control Console</button>
+      <button id="demoBtn" class="btn-secondary">Load Demo Data</button>
       <div id="errorDiv" class="error-msg"></div>
     </div>
   </div>
 
-  <!-- VIEW 2: CONTROL CONSOLE (MAIN) -->
+  <!-- VIEW 2: MAIN CONTROL DASHBOARD -->
   <div id="dashboardView" class="app-layout" style="display: none;">
     <header class="top-bar">
       <div>
@@ -47,7 +48,7 @@
         <!-- Workstation Cards Render Dynamically -->
       </main>
 
-      <!-- Advanced Side Inspector Drawer -->
+      <!-- Side Inspector Drawer -->
       <aside id="inspectorDrawer" class="inspector-drawer">
         <div class="drawer-header">
           <div class="user-profile-title">
@@ -63,6 +64,10 @@
             <h4>Student Details</h4>
             <div class="info-grid">
               <div class="info-item">
+                <span class="label">Roll Number</span>
+                <span id="drawerRollNo" class="value">--</span>
+              </div>
+              <div class="info-item">
                 <span class="label">Student Name</span>
                 <span id="drawerStudentName" class="value">--</span>
               </div>
@@ -74,7 +79,7 @@
                 <span class="label">Exam Schedule</span>
                 <span id="drawerExamTime" class="value">--</span>
               </div>
-              <div class="info-item">
+              <div class="info-item" style="grid-column: 1 / -1;">
                 <span class="label">Active Window</span>
                 <span id="drawerCurrentApp" class="value accent-text">--</span>
               </div>

@@ -1,8 +1,7 @@
 const { contextBridge } = require('electron');
 const io = require('socket.io-client');
 
-// Default target server URL (change to your Server PC IP)
-let serverUrl = process.env.SERVER_URL || 'http://192.168.1.15:3000';
+let serverUrl = process.env.SERVER_URL || 'http://localhost:3000';
 let socket = null;
 
 function initializeSocket(targetUrl) {
@@ -19,15 +18,13 @@ function initializeSocket(targetUrl) {
     timeout: 5000
   });
 
-  socket.on('connect', () => console.log('✅ Admin Socket Connected to', serverUrl, 'ID:', socket.id));
+  socket.on('connect', () => console.log('✅ Admin Socket Connected to', serverUrl));
   socket.on('connect_error', (err) => console.error('❌ Socket Error:', err.message));
 }
 
-// Initialize socket instance on script load
 initializeSocket(serverUrl);
 
 contextBridge.exposeInMainWorld('adminAPI', {
-  // Config option to switch server IP dynamically from front-end interface
   setServerAddress: (newIp) => {
     const formattedUrl = newIp.startsWith('http') ? newIp : `http://${newIp}:3000`;
     initializeSocket(formattedUrl);
@@ -40,12 +37,12 @@ contextBridge.exposeInMainWorld('adminAPI', {
       if (!socket.connected) socket.connect();
 
       const timer = setTimeout(() => {
-        reject(new Error('Server did not respond in time. Check IP address and port 3000 firewall rules.'));
+        reject(new Error('Server communication timeout. Check IP address and port 3000 status.'));
       }, 5000);
 
       socket.emit('admin-login', { labId }, (response) => {
         clearTimeout(timer);
-        response ? resolve(response) : reject(new Error('Empty server response.'));
+        response ? resolve(response) : reject(new Error('Empty response received from server.'));
       });
     });
   },

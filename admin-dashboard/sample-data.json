@@ -1,0 +1,80 @@
+[
+  {
+    "id": "PC-01",
+    "pcName": "WORKSTATION-01",
+    "rollNo": "23CS101",
+    "studentName": "Aarav Mehta",
+    "course": "B.Tech CSE",
+    "semester": "Sem 5",
+    "examTime": "09:00 AM - 12:00 PM",
+    "currentApp": "Visual Studio Code",
+    "status": "green",
+    "logs": [
+      "09:02 AM - Session started",
+      "09:15 AM - Focus: VS Code",
+      "10:40 AM - Focus: Chrome (exam portal)"
+    ]
+  },
+  {
+    "id": "PC-02",
+    "pcName": "WORKSTATION-02",
+    "rollNo": "23CS102",
+    "studentName": "Diya Sharma",
+    "course": "B.Tech CSE",
+    "semester": "Sem 5",
+    "examTime": "09:00 AM - 12:00 PM",
+    "currentApp": "WhatsApp Desktop",
+    "status": "dark-red",
+    "logs": [
+      "09:01 AM - Session started",
+      "09:47 AM - Focus: WhatsApp Desktop",
+      "09:47 AM - Restricted application detected"
+    ]
+  },
+  {
+    "id": "PC-03",
+    "pcName": "WORKSTATION-03",
+    "rollNo": "23CS103",
+    "studentName": "Kabir Nair",
+    "course": "B.Tech CSE",
+    "semester": "Sem 5",
+    "examTime": "09:00 AM - 12:00 PM",
+    "currentApp": "Google Chrome",
+    "status": "red",
+    "logs": [
+      "09:03 AM - Session started",
+      "10:05 AM - Focus: Google Chrome",
+      "10:05 AM - Unauthorized tab switch"
+    ]
+  },
+  {
+    "id": "PC-04",
+    "pcName": "WORKSTATION-04",
+    "rollNo": "23CS104",
+    "studentName": "Ishita Verma",
+    "course": "B.Tech CSE",
+    "semester": "Sem 5",
+    "examTime": "09:00 AM - 12:00 PM",
+    "currentApp": "Notepad++",
+    "status": "green",
+    "logs": [
+      "09:00 AM - Session started",
+      "09:20 AM - Focus: Notepad++"
+    ]
+  },
+  {
+    "id": "PC-05",
+    "pcName": "WORKSTATION-05",
+    "rollNo": "23CS105",
+    "studentName": "Rohan Iyer",
+    "course": "B.Tech CSE",
+    "semester": "Sem 5",
+    "examTime": "09:00 AM - 12:00 PM",
+    "currentApp": "MySQL Workbench",
+    "status": "green",
+    "logs": [
+      "09:04 AM - Session started",
+      "09:30 AM - Focus: MySQL Workbench"
+    ]
+  }
+]

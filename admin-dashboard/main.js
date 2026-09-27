@@ -8,6 +8,7 @@ function createWindow() {
     width: 1280,
     height: 850,
     backgroundColor: '#0f172a',
+    title: 'Lab Surveillance System',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,

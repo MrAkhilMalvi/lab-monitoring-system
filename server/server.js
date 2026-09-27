@@ -12,6 +12,9 @@ const io = new Server(server, {
 
 const activePCs = new Map();
 
+/**
+ * Creates a normalized payload for student instances
+ */
 function createStudentPayload(socketId, studentData = {}, data = {}) {
   return {
     id: socketId,
@@ -27,7 +30,9 @@ function createStudentPayload(socketId, studentData = {}, data = {}) {
   };
 }
 
-// Function to helper output the local network IPv4 address
+/**
+ * Utility to extract non-internal IPv4 address for local network access
+ */
 function getLocalIPAddress() {
   const interfaces = os.networkInterfaces();
   for (const name of Object.keys(interfaces)) {
@@ -43,11 +48,11 @@ function getLocalIPAddress() {
 io.on('connection', (socket) => {
   console.log(`[Socket Connected] ID: ${socket.id} from IP: ${socket.handshake.address}`);
 
-  // Admin Connect / Verification by Lab ID
+  // Admin Verification & Initial Handshake
   socket.on('admin-login', (payload = {}, callback) => {
     const { labId = 'LAB-101' } = payload;
     socket.join('admins');
-    console.log(`[Admin Connected] ID: ${socket.id} assigned to ${labId}`);
+    console.log(`[Admin Connected] ID: ${socket.id} registered to ${labId}`);
 
     if (typeof callback === 'function') {
       callback({
@@ -58,7 +63,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Student Registration
+  // Student Agent Registration
   socket.on('student-register', (studentData = {}) => {
     console.log(`[Student Registered]: ${studentData.pcName || socket.id}`);
     const pcData = createStudentPayload(socket.id, studentData);
@@ -67,7 +72,7 @@ io.on('connection', (socket) => {
     io.to('admins').emit('pc-connected', pcData);
   });
 
-  // Telemetry Stream
+  // Real-Time Telemetry Stream Processing
   socket.on('student-telemetry', (data = {}) => {
     if (!activePCs.has(socket.id)) {
       const autoPcData = createStudentPayload(socket.id, {}, data);
@@ -79,11 +84,11 @@ io.on('connection', (socket) => {
     pc.currentApp = data.currentApp || 'Desktop Environment';
     pc.status = data.status || 'green';
 
-    const logEntry = `[${new Date().toLocaleTimeString()}] App: ${pc.currentApp}`;
+    const timestamp = new Date().toLocaleTimeString();
+    const logEntry = `[${timestamp}] App Focus: "${pc.currentApp}" (Status: ${pc.status.toUpperCase()})`;
+    
     pc.logs.unshift(logEntry);
-    if (pc.logs.length > 50) pc.logs.pop();
-
-    console.log(`[Telemetry] ${pc.pcName}: ${pc.currentApp} (${pc.status})`);
+    if (pc.logs.length > 100) pc.logs.pop(); // Keep log size manageable
 
     io.to('admins').emit('pc-telemetry-update', {
       id: socket.id,
@@ -93,7 +98,7 @@ io.on('connection', (socket) => {
     });
   });
 
-  // Disconnect
+  // Disconnection Handling
   socket.on('disconnect', () => {
     console.log(`[Socket Disconnected] ID: ${socket.id}`);
     if (activePCs.has(socket.id)) {
@@ -104,11 +109,13 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-const HOST = '0.0.0.0'; // Bind to all local interfaces to receive remote connections
+const HOST = '0.0.0.0';
 
 server.listen(PORT, HOST, () => {
   const localIP = getLocalIPAddress();
-  console.log(`🚀 Central WebSocket Server running!`);
-  console.log(`📍 Local access: http://localhost:${PORT}`);
-  console.log(`🌐 Network access for Client PCs: http://${localIP}:${PORT}`);
+  console.log(`====================================================`);
+  console.log(`🚀 Central Surveillance Server Active`);
+  console.log(`📍 Localhost Address : http://localhost:${PORT}`);
+  console.log(`🌐 Subnet Network IP : http://${localIP}:${PORT}`);
+  console.log(`====================================================`);
 });
