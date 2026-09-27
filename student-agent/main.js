@@ -9,6 +9,7 @@ const SERVER_URL = process.env.SERVER_URL || 'http://10.36.115.157:3000';
 const BANNED_APPS = ['discord', 'chatgpt', 'whatsapp', 'telegram', 'cheatengine', 'gemini', 'claude', 'copilot'];
 const ALLOWED_KEYWORDS = ['exam', 'chrome', 'code', 'vsc', 'cmd', 'powershell', 'terminal'];
 
+
 let socket;
 let trackingInterval = null;
 
