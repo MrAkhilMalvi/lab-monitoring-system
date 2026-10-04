@@ -31,3 +31,6 @@ pnpm-debug.log*
 .DS_Store
 .vscode/
 .idea/
+
+changes.txt
+docker-compose.yml

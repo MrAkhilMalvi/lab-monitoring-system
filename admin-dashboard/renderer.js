@@ -1,12 +1,15 @@
+// UI Element References
 const loginBtn = document.getElementById('loginBtn');
-const demoBtn = document.getElementById('demoBtn');
-const labNameInput = document.getElementById('labName');
+const identifierInput = document.getElementById('identifier') || document.getElementById('labName');
+const passwordInput = document.getElementById('password');
 const errorDiv = document.getElementById('errorDiv');
 const loginView = document.getElementById('loginView');
 const dashboardView = document.getElementById('dashboardView');
 const pcGrid = document.getElementById('pcGrid');
 const pcCounter = document.getElementById('pcCounter');
 const labTitle = document.getElementById('labTitle');
+const assistantMeta = document.getElementById('assistantMeta');
+const logoutBtn = document.getElementById('logoutBtn');
 
 // Drawer Inspector Elements
 const inspectorDrawer = document.getElementById('inspectorDrawer');
@@ -20,38 +23,57 @@ const drawerExamTime = document.getElementById('drawerExamTime');
 const drawerCurrentApp = document.getElementById('drawerCurrentApp');
 const logList = document.getElementById('logList');
 
+// Global State
 window.activePCs = window.activePCs || new Map();
 let selectedPcId = null;
+let currentSession = null;
 
-// Handle Station Login Initialization
+// ==========================================
+// 1. LAB ASSISTANT AUTHENTICATION
+// ==========================================
 if (loginBtn) {
-  loginBtn.addEventListener('click', async () => {
-    const labId = labNameInput?.value?.trim();
+  loginBtn.addEventListener('click', async (e) => {
+    if (e) e.preventDefault();
 
-    if (!labId) {
-      if (errorDiv) errorDiv.textContent = 'Please enter a valid Lab Station ID.';
+    const identifier = identifierInput?.value?.trim();
+    const password = passwordInput?.value;
+
+    if (!identifier || !password) {
+      showError('Please enter both your Email / Staff ID and Password.');
       return;
     }
 
-    if (!window.adminAPI) {
-      if (errorDiv) errorDiv.textContent = 'Preload bridge failed to load.';
-      return;
-    }
-
-    if (errorDiv) errorDiv.textContent = 'Connecting...';
+    showError('Authenticating credentials...', '#60a5fa');
+    loginBtn.disabled = true;
 
     try {
-      const response = await window.adminAPI.login(labId);
+      const response = await window.adminAPI.login({ identifier, password });
+      console.log('🔍 [Login Bridge Response]:', response);
 
-      if (response && response.success) {
-        if (errorDiv) errorDiv.textContent = '';
-        if (labTitle) labTitle.textContent = `Station: ${labId}`;
+      if (response && response.success && response.user) {
+        clearError();
+        currentSession = response.user;
 
+        // 1. Populate Lab Header
+        if (labTitle) {
+          const lab = response.user.assignedLab;
+          labTitle.textContent = `${lab.name} (${lab.room})`;
+        }
+
+        // 2. Populate Assistant Meta
+        if (assistantMeta) {
+          assistantMeta.textContent = `Operator: ${response.user.name} · Staff ID: ${response.user.staffId}`;
+        }
+
+        // 3. Clear and Render Active Stations
         window.activePCs.clear();
         if (Array.isArray(response.activePcs)) {
-          response.activePcs.forEach(pc => {
-            const pcId = pc.id || pc.socketId;
-            if (pcId) window.activePCs.set(pcId, pc);
+          response.activePcs.forEach((pc) => {
+            // Safety check: ensure pc is a valid object before accessing properties
+            if (pc && typeof pc === 'object') {
+              const pcId = pc.id || pc.socketId;
+              if (pcId) window.activePCs.set(pcId, pc);
+            }
           });
         }
 
@@ -61,100 +83,122 @@ if (loginBtn) {
         bindSocketListeners();
         renderGrid();
       } else {
-        if (errorDiv) errorDiv.textContent = response?.message || 'Failed to authenticate.';
+        showError(response?.message || 'Invalid server response structure.');
       }
     } catch (err) {
-      console.error('[Renderer Error]:', err);
-      if (errorDiv) errorDiv.textContent = err.message || 'Connection timeout.';
+      console.error('[Renderer Auth Error]:', err);
+      showError(err.message || 'Authentication service connection error.');
+    } finally {
+      loginBtn.disabled = false;
     }
   });
 }
 
-// Load bundled sample-data.json so the dashboard UI can be previewed
-// without a live server / connected student nodes.
-if (demoBtn) {
-  demoBtn.addEventListener('click', async () => {
-    if (errorDiv) errorDiv.textContent = 'Loading demo data...';
-    try {
-      const res = await fetch('sample-data.json');
-      if (!res.ok) throw new Error('sample-data.json not found');
-      const demoPCs = await res.json();
-
-      window.activePCs.clear();
-      demoPCs.forEach(pc => {
-        const pcId = pc.id || pc.socketId;
-        if (pcId) window.activePCs.set(pcId, pc);
-      });
-
-      if (errorDiv) errorDiv.textContent = '';
-      if (labTitle) labTitle.textContent = 'Station: DEMO MODE';
-
-      loginView.style.display = 'none';
-      dashboardView.style.display = 'flex';
-
-      renderGrid();
-    } catch (err) {
-      console.error('[Demo Data Error]:', err);
-      if (errorDiv) errorDiv.textContent = 'Could not load sample-data.json.';
+// Allow pressing "Enter" in the password input to submit
+if (passwordInput) {
+  passwordInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      loginBtn?.click();
     }
   });
 }
 
-// Bind incoming Socket Streams
+// Logout Reset
+if (logoutBtn) {
+  logoutBtn.addEventListener('click', () => {
+    currentSession = null;
+    selectedPcId = null;
+    window.activePCs.clear();
+
+    if (passwordInput) passwordInput.value = '';
+    closeDrawer();
+
+    dashboardView.style.display = 'none';
+    loginView.style.display = 'flex';
+  });
+}
+
+// ==========================================
+// 2. REAL-TIME TELEMETRY LISTENERS
+// ==========================================
 function bindSocketListeners() {
-  window.adminAPI.onPcConnected((pc) => {
-    const pcId = pc.id || pc.socketId;
-    window.activePCs.set(pcId, pc);
-    renderGrid();
-    if (selectedPcId === pcId) updateInspectorDrawer(pc);
-  });
+  if (!window.adminAPI) return;
 
-  window.adminAPI.onPcTelemetryUpdate((data) => {
-    const pc = window.activePCs.get(data.id);
-    if (pc) {
-      pc.status = data.status;
-      pc.currentApp = data.currentApp;
-      if (data.logEntry) {
-        pc.logs = pc.logs || [];
-        pc.logs.unshift(data.logEntry);
-      }
+  // New Student PC Connects
+  if (typeof window.adminAPI.onPcConnected === 'function') {
+    window.adminAPI.onPcConnected((pc) => {
+      const pcId = pc.id || pc.socketId;
+      if (!pcId) return;
+      window.activePCs.set(pcId, pc);
       renderGrid();
-      if (selectedPcId === data.id) updateInspectorDrawer(pc);
-    }
-  });
+      if (selectedPcId === pcId) updateInspectorDrawer(pc);
+    });
+  }
 
-  window.adminAPI.onPcDisconnected((data) => {
-    window.activePCs.delete(data.id);
-    if (selectedPcId === data.id) closeDrawer();
-    renderGrid();
-  });
+  // Live Screen / App / Flag Updates
+  if (typeof window.adminAPI.onPcTelemetryUpdate === 'function') {
+    window.adminAPI.onPcTelemetryUpdate((data) => {
+      const pc = window.activePCs.get(data.id);
+      if (pc) {
+        pc.status = data.status || pc.status;
+        pc.currentApp = data.currentApp || pc.currentApp;
+        if (data.logEntry) {
+          pc.logs = pc.logs || [];
+          pc.logs.unshift(data.logEntry);
+        }
+        renderGrid();
+        if (selectedPcId === data.id) updateInspectorDrawer(pc);
+      }
+    });
+  }
+
+  // Workstation Disconnects
+  if (typeof window.adminAPI.onPcDisconnected === 'function') {
+    window.adminAPI.onPcDisconnected((data) => {
+      window.activePCs.delete(data.id);
+      if (selectedPcId === data.id) closeDrawer();
+      renderGrid();
+    });
+  }
 }
 
-// Render dynamic card view
+// ==========================================
+// 3. WORKSTATION GRID RENDERING
+// ==========================================
 function renderGrid() {
   if (!pcGrid) return;
   pcGrid.innerHTML = '';
   if (pcCounter) pcCounter.textContent = window.activePCs.size;
 
+  if (window.activePCs.size === 0) {
+    pcGrid.innerHTML = `
+      <div style="grid-column: 1 / -1; padding: 40px; text-align: center; color: #888;">
+        No active workstation nodes currently transmitting telemetry for this lab station.
+      </div>
+    `;
+    return;
+  }
+
   window.activePCs.forEach((pc, id) => {
     const card = document.createElement('div');
     card.className = `pc-card ${selectedPcId === id ? 'active-selected' : ''}`;
 
-    let color = '#16A34A'; // Normal Status Green
-    if (pc.status === 'red') color = '#D97706'; // Moderate Flag Amber
-    if (pc.status === 'dark-red') color = '#DC2626'; // Restricted Flag Red
+    // Status Indicator Colors
+    let color = '#16A34A'; // Normal (Green)
+    if (pc.status === 'red') color = '#D97706'; // Warning (Amber)
+    if (pc.status === 'dark-red') color = '#DC2626'; // Restricted (Red)
 
     card.innerHTML = `
       <div class="pc-header">
-        <span class="pc-title">${pc.pcName}</span>
+        <span class="pc-title">${escapeHtml(pc.pcName || `PC-${id}`)}</span>
         <span class="status-dot" style="background-color: ${color}; box-shadow: 0 0 6px ${color};"></span>
       </div>
       <div class="pc-meta">
-        <p><strong>${pc.rollNo || '--'}</strong> · ${pc.studentName}</p>
-        <p>${pc.course} (${pc.semester})</p>
+        <p><strong>${escapeHtml(pc.rollNo || '--')}</strong> · ${escapeHtml(pc.studentName || 'Unassigned')}</p>
+        <p>${escapeHtml(pc.course || '--')} ${pc.semester ? `(${escapeHtml(pc.semester)})` : ''}</p>
       </div>
       <div class="pc-app-bar">
-        <strong>Active App:</strong> ${pc.currentApp}
+        <strong>Active App:</strong> ${escapeHtml(pc.currentApp || 'Desktop')}
       </div>
     `;
 
@@ -163,58 +207,91 @@ function renderGrid() {
   });
 }
 
-// Open and update side drawer inspector
+// ==========================================
+// 4. INSPECTOR DRAWER CONTROLS
+// ==========================================
 function openInspector(pcId) {
   const pc = window.activePCs.get(pcId);
   if (!pc) return;
 
   selectedPcId = pcId;
   renderGrid();
-
   updateInspectorDrawer(pc);
-  inspectorDrawer.classList.add('open');
+  inspectorDrawer?.classList.add('open');
 }
 
 function updateInspectorDrawer(pc) {
-  drawerPcName.textContent = pc.pcName;
+  if (drawerPcName) drawerPcName.textContent = pc.pcName || 'Workstation';
   if (drawerRollNo) drawerRollNo.textContent = pc.rollNo || '--';
-  drawerStudentName.textContent = pc.studentName;
-  drawerCourseSem.textContent = `${pc.course} - ${pc.semester}`;
-  drawerExamTime.textContent = pc.examTime || '09:00 AM - 12:00 PM';
-  drawerCurrentApp.textContent = pc.currentApp;
+  if (drawerStudentName) drawerStudentName.textContent = pc.studentName || '--';
+  if (drawerCourseSem) drawerCourseSem.textContent = `${pc.course || '--'} ${pc.semester ? `(${pc.semester})` : ''}`.trim();
+  if (drawerExamTime) drawerExamTime.textContent = pc.examTime || 'Session Active';
+  if (drawerCurrentApp) drawerCurrentApp.textContent = pc.currentApp || '--';
 
-  // Status Badge Updates
-  drawerStatusBadge.className = 'badge';
-  if (pc.status === 'dark-red') {
-    drawerStatusBadge.textContent = 'RESTRICTED APP DETECTED';
-    drawerStatusBadge.classList.add('danger');
-  } else if (pc.status === 'red') {
-    drawerStatusBadge.textContent = 'UNAUTHORIZED FOCUS';
-    drawerStatusBadge.classList.add('warning');
-  } else {
-    drawerStatusBadge.textContent = 'NORMAL';
-    drawerStatusBadge.classList.add('normal');
+  // Status Badge Rendering
+  if (drawerStatusBadge) {
+    drawerStatusBadge.className = 'badge';
+    if (pc.status === 'dark-red') {
+      drawerStatusBadge.textContent = 'RESTRICTED APP DETECTED';
+      drawerStatusBadge.classList.add('danger');
+    } else if (pc.status === 'red') {
+      drawerStatusBadge.textContent = 'UNAUTHORIZED FOCUS';
+      drawerStatusBadge.classList.add('warning');
+    } else {
+      drawerStatusBadge.textContent = 'NORMAL';
+      drawerStatusBadge.classList.add('normal');
+    }
   }
 
-  // Render Log Entries
-  logList.innerHTML = '';
-  const logs = pc.logs || [];
-  if (logs.length === 0) {
-    logList.innerHTML = '<div class="log-entry">No events logged for this session.</div>';
-  } else {
-    logs.forEach(log => {
-      const entry = document.createElement('div');
-      entry.className = 'log-entry';
-      entry.textContent = log;
-      logList.appendChild(entry);
-    });
+  // Telemetry Log Feed
+  if (logList) {
+    logList.innerHTML = '';
+    const logs = pc.logs || [];
+    if (logs.length === 0) {
+      logList.innerHTML = '<div class="log-entry">No events logged for this session.</div>';
+    } else {
+      logs.forEach((log) => {
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.textContent = log;
+        logList.appendChild(entry);
+      });
+    }
   }
 }
 
 function closeDrawer() {
   selectedPcId = null;
-  inspectorDrawer.classList.remove('open');
+  inspectorDrawer?.classList.remove('open');
   renderGrid();
 }
 
-if (closeDrawerBtn) closeDrawerBtn.addEventListener('click', closeDrawer);
+if (closeDrawerBtn) {
+  closeDrawerBtn.addEventListener('click', closeDrawer);
+}
+
+// ==========================================
+// 5. HELPER UTILITIES
+// ==========================================
+function showError(message, color = '#ff4d4f') {
+  if (!errorDiv) return;
+  errorDiv.style.color = color;
+  errorDiv.textContent = message;
+  errorDiv.style.display = 'block';
+}
+
+function clearError() {
+  if (!errorDiv) return;
+  errorDiv.textContent = '';
+  errorDiv.style.display = 'none';
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}

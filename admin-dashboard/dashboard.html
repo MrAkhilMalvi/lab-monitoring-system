@@ -6,24 +6,44 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  
 
-  <!-- VIEW 1: LAB LOGIN CARD -->
+  <!-- VIEW 1: LAB ASSISTANT AUTHENTICATION -->
   <div id="loginView" class="flex-center" style="height: 100vh;">
     <div class="login-card">
       <div class="brand">
         <div class="brand-badge"></div>
         <h2>Sentinel Surveillance</h2>
       </div>
-      <p class="subtitle">Enter Lab ID to Initialize Station</p>
+      <p class="subtitle">Lab Assistant Portal Authentication</p>
 
-      <div class="form-group">
-        <label>Lab Station ID</label>
-        <input type="text" id="labName" value="LAB-101">
-      </div>
+      <form id="loginForm" onsubmit="return false;">
+        <div class="form-group">
+          <label for="identifier">Email or Staff ID</label>
+          <input 
+            type="text" 
+            id="identifier" 
+            placeholder="e.g. rahul.sharma@campus.edu or STAFF-1001" 
+            required 
+            autocomplete="username"
+          >
+        </div>
 
-      <button id="loginBtn" class="btn-primary">Initialize Control Console</button>
-      <button id="demoBtn" class="btn-secondary">Load Demo Data</button>
-      <div id="errorDiv" class="error-msg"></div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input 
+            type="password" 
+            id="password" 
+            placeholder="Enter your security password" 
+            required 
+            autocomplete="current-password"
+          >
+        </div>
+
+        <button type="submit" id="loginBtn" class="btn-primary">Authenticate & Access Console</button>
+      </form>
+
+      <div id="errorDiv" class="error-msg" style="display: none; margin-top: 12px; color: #ff4d4f; font-size: 14px;"></div>
     </div>
   </div>
 
@@ -32,20 +52,21 @@
     <header class="top-bar">
       <div>
         <h2 id="labTitle">Lab Surveillance Console</h2>
-        <span class="subtext">Real-Time Integrity Monitoring</span>
+        <span class="subtext" id="assistantMeta">Real-Time Integrity Monitoring</span>
       </div>
-      <div class="header-stats">
+      <div class="header-stats" style="display: flex; gap: 15px; align-items: center;">
         <div class="stat-badge">
           <span>Active Workstations:</span>
           <strong id="pcCounter" class="accent-text">0</strong>
         </div>
+        <button id="logoutBtn" class="btn-secondary" style="padding: 6px 14px; font-size: 12px;">Sign Out</button>
       </div>
     </header>
 
     <div class="workspace-body">
       <!-- Grid View -->
       <main id="pcGrid" class="pc-grid">
-        <!-- Workstation Cards Render Dynamically -->
+        <!-- Live workstation cards mount here -->
       </main>
 
       <!-- Side Inspector Drawer -->

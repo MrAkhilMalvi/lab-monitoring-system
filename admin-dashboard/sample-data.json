@@ -76,5 +76,20 @@
       "09:04 AM - Session started",
       "09:30 AM - Focus: MySQL Workbench"
     ]
+  },
+  {
+    "id": "PC-05",
+    "pcName": "WORKSTATION-05",
+    "rollNo": "23CS105",
+    "studentName": "Rohan Iyer",
+    "course": "B.Tech CSE",
+    "semester": "Sem 5",
+    "examTime": "09:00 AM - 12:00 PM",
+    "currentApp": "MySQL Workbench",
+    "status": "green",
+    "logs": [
+      "09:04 AM - Session started",
+      "09:30 AM - Focus: MySQL Workbench"
+    ]
   }
 ]

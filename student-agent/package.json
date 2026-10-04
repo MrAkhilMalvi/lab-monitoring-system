@@ -8,6 +8,8 @@
     "build": "pkg main.js --targets node18-win-x64 --output dist/student-agent.exe"
   },
   "dependencies": {
+    "dotenv": "^18.0.5",
+    "pg": "^8.23.1",
     "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
